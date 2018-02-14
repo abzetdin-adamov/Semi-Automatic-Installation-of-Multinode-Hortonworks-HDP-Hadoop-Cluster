@@ -36,7 +36,7 @@ We add the list of all nodes and their FQDNs to `/etc/hosts`
 192.168.33.53 datanode03.hadoop.ada
 192.168.33.54 datanode04.hadoop.ada
 ```
-Additionally write all hostnames into file `/root/hostNames that` in shell scripts
+Additionally write all hostnames into file `/root/hostNames` that in shell scripts
 ```
 namenode.hadoop.ada
 datanode01.hadoop.ada
@@ -152,7 +152,7 @@ pssh --hosts hostNames -t 1000 --user root -i "echo -e '* soft nofile 10000\n* h
 pssh --hosts hostNames -t 1000 --user root -i "yum install -y ntp; systemctl start ntpd; systemctl enable ntpd"
 pssh --hosts hostNames -t 1000 --user root -i "systemctl start ntpd; systemctl enable ntpd"
 ``` 
-**10. Install Name Service Caching Daemon (nscd) on all remote nodes and enable this service
+**10. Install Name Service Caching Daemon (nscd) on all remote nodes and enable this service**
 ```
 pssh --hosts hostNames -t 1000 --user root -i "yum -y install nscd; systemctl start nscd.service; systemctl enable nscd.service" 
 ```
@@ -160,93 +160,105 @@ pssh --hosts hostNames -t 1000 --user root -i "yum -y install nscd; systemctl st
 ```
 pssh --hosts hostNames -t 1000 --user root -i "systemctl disable firewalld; service firewalld stop"
 ```
-**12. Disable Security-Enhanced Linux (SELinux) **
+**12. Disable Security-Enhanced Linux (SELinux)**
 ```
 pssh --hosts hostNames -t 1000 --user root -i "sed -i '/SELINUX=enforcing/c\SELINUX=disabled' /etc/selinux/config; echo umask 0022 >> /etc/profile"
 ```
 **13. Create local Repository**
 
-Create local Repository for Ambary, HDP and HDP-UTILS. This is important to do speed-up the installation process. As a result instead of downloding large distributives from Internet, they will be taken from local network.
-We will use wget -b ...     // download in background and save logs in wget-log file
+You can skip this step if you will use public repository.
 
+Just for demonstration I installed my local repository on the same master-node (IP: 192.168.33.50) where Ambari server to be installed. But on production installation, it is recommended to choose another machine.
+Create local Repository for Ambary, HDP and HDP-UTILS. This is important to do speed-up the installation process. As a result instead of downloding large distributives from Internet, they will be taken from local network.
+We will use `wget -b ...` to download in background and save logs in `wget-log` file
+```
 wget -b http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.6.0.0/ambari-2.6.0.0-centos7.tar.gz
 wget -b http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.6.3.0/HDP-2.6.3.0-centos7-rpm.tar.gz
 wget -b http://public-repo-1.hortonworks.com/HDP-UTILS-1.1.0.21/repos/centos7/HDP-UTILS-1.1.0.21-centos7.tar.gz
-
-- Downlaod .repo files of Ambari and HDP
+```
+Downlaod .repo files of Ambari and HDP
+```
 wget http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.6.0.0/ambari.repo
 wget http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.6.3.0/hdp.repo
-
-- Extract .tar files using 
+```
+Extract .tar files using 
+```
 tar -xvzf ambari-2.6.0.0-centos7.tar.gz; tar -xvzf HDP-2.6.3.0-centos7-rpm.tar.gz; tar -xvzf HDP-UTILS-1.1.0.21-centos7.tar.gz;
-
+```
 You can use tar extractor with --directory key to extract archive into specify directory 
-
+```
 mkdir /var/www/html/repo/HDP-UTILS
 tar -xvzf HDP-UTILS-1.1.0.21-centos7.tar.gz --directory HDP-UTILS
-
-
-- After extracting move folders to root folder of the Web-server
+```
+After extracting move folders to root folder of the Web-server
+```
 mv ambari /var/www/html/repo
 mv HDP /var/www/html/repo
 mv HDP-UTILS /var/www/html/repo
-
-
-- Update .repo files
+```
+Update .repo files
+```
 vi ambari.repo
-baseurl=http://192.168.33.52/repo/ambari/centos7/2.6.0.0-267/
-gpgkey=http://192.168.33.52/repo/ambari/centos7/2.6.0.0-267/RPM-GPG-KEY/RPM-GPG-KEY-Jenkins
-
+baseurl=http://192.168.33.50/repo/ambari/centos7/2.6.0.0-267/
+gpgkey=http://192.168.33.50/repo/ambari/centos7/2.6.0.0-267/RPM-GPG-KEY/RPM-GPG-KEY-Jenkins
+```
+```
 vi hdp.repo
-baseurl=http://192.168.33.52/repo/HDP/centos7/2.6.3.0-235/
-gpgkey=http://192.168.33.52/repo/HDP/centos7/2.6.3.0-235/RPM-GPG-KEY/RPM-GPG-KEY-Jenkins
+baseurl=http://192.168.33.50/repo/HDP/centos7/2.6.3.0-235/
+gpgkey=http://192.168.33.50/repo/HDP/centos7/2.6.3.0-235/RPM-GPG-KEY/RPM-GPG-KEY-Jenkins
 ...
-baseurl=http://192.168.33.52/repo/HDP-UTILS/
-gpgkey=http://192.168.33.52/repo/HDP-UTILS/RPM-GPG-KEY/RPM-GPG-KEY-Jenkins
+baseurl=http://192.168.33.50/repo/HDP-UTILS/
+gpgkey=http://192.168.33.50/repo/HDP-UTILS/RPM-GPG-KEY/RPM-GPG-KEY-Jenkins
+```
 
-- Copy .repo files to AMBARI and HDP folders accordingly
-
+Copy .repo files to AMBARI and HDP folders accordingly
+```
 cp ambari.repo /var/www/html/repo/ambari/centos7/2.6.0.0-267/
 cp hdp.repo /var/www/html/repo/HDP/centos7/2.6.3.0-235/
+```
 
-
-20. Put updated ambari.repo to the repository folder
-
+**14. Put updated ambari.repo to the repository folder**
+```
 cp ambari.repo /etc/yum.repos.d
 cd /etc/yum.repos.d
-
-21. Install the Ambari Server using local repository
-
+```
+**15. Install the Ambari Server using local repository**
+```
 yum install ambari-server -y
-
-22. Setup the Ambari Server 
-
+```
+**16. Setup the Ambari Server**
+```
 ambari-server setup
-
+```
 - accept warning regrading disabled Selinux typing "y"
 - accept default root user typing "n"
 - Enter 1 to download Oracle JDK 1.8. and accept Oracle licence agreement
 - enter "n" at "Enter advanced database configuration" to use default database PostgreSQL (database name is ambari, user / pasword are ambari/bigdata)
 - at the end of setup "Ambari Server 'setup' completed successfully."
 
-23. Start Ambari Server 
-
+**17. Start Ambari Server**
+```
 ambari-server start
-
+```
 to check the status of Ambari Server service
+```
 ambari-server status
-
+```
 to stopt Ambari Server
+```
 ambari-server stop
-
-24. Check Database logs if there any issues
-
+```
+**18. Check Database logs if there any issues**
+```
 cat /var/log/ambari-server/ambari-server-check-database.log
-
-25. Now its time to login into Ambari Server to setup HDP
+```
+**19. Now its time to login into Ambari Server to setup HDP**
 
 type in your browser the domainname or IP address of machine where you have just installed Ambari Server
-
+```
 http://192.168.33.100:8080/
-type there admin/admin as user/password 
+```
+type there `admin/admin` as user/password 
 follow to instructions to install Hortonworks HDP using Ambari Cluster Install Wizard
+
+**20. DONE**
