@@ -1,4 +1,4 @@
-#Semi-Automatic Installation of Multinode Hortonworks HDP Hadoop Cluster
+# Semi-Automatic Installation of Multinode Hortonworks HDP Hadoop Cluster
 
 In this tutorial you will be guided щт how to install Multinode Hortonworks HDP Hadoop Cluster in easy way. We will use shell scripts to implement some repeatable commands on remote hosts.  
 We assume that there are 5 computers (or virtual machines): 1 of them will serve as master node (NameNode), 4 others as slaves (DataNode). We also assume that root password is same in all 5 nodes. 
