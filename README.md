@@ -4,7 +4,7 @@ In this tutorial you will be guided щт how to install Multinode Hortonworks HD
 We assume that there are 5 computers (or virtual machines): 1 of them will serve as master node (NameNode), 4 others as slaves (DataNode). We also assume that root password is same in all 5 nodes. 
 The difference of this tutorial is this: same guidelines can be used to install Hadoop cluster on any number of nodes (from several to hundreds) without significant affecting time and efforts. 
 
-**Preparing Environment for Installation **
+**Preparing Environment for Installation**
 
 Installation will be accomplished on master node (in my case `namenode.hadoop.ada).
 ```
@@ -121,7 +121,7 @@ pssh --hosts hostNames --user root -i "reboot"
 ```
 pssh --hosts hostNames -t 1000 --user root -i "yum -y install zip; yum -y install unzip; yum -y install wget"
 ```
-**6. to replace DNS Servers in all remote nodes **
+**6. to replace DNS Servers in all remote nodes**
 ```
 #!/bin/bash
 cat /root/hostNames | while read HOSTNAME
