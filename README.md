@@ -4,6 +4,8 @@ In this tutorial you will be guided щт how to install Multinode Hortonworks HD
 We assume that there are 5 computers (or virtual machines): 1 of them will serve as master node (NameNode), 4 others as slaves (DataNode). We also assume that root password is same in all 5 nodes. 
 The difference of this tutorial is this: same guidelines can be used to install Hadoop cluster on any number of nodes (from several to hundreds) without significant affecting time and efforts. 
 
+**Preparing Environment for Installation **
+
 Installation will be accomplished on master node (in my case `namenode.hadoop.ada).
 ```
 yum -y update && yum -y upgrade
@@ -53,7 +55,7 @@ vi ~/shellscript.sh
 cat /root/hostNames | while read HOSTNAME
 do
 sshpass -f /root/passw.txt ssh -T root@${HOSTNAME} << EOF
-echo "==========================${HOSTNAME} -- ${USERNAME} -- ${PASSW}"
+echo "==========================${HOSTNAME}"
 hostnamectl set-hostname ${HOSTNAME}
 hostname
 EOF
@@ -83,37 +85,44 @@ Now rund following bash script
 #!/bin/bash
 cat /root/hostNames | while read HOSTNAME
 do
-echo "==========================${HOSTNAME} --"
+echo "==========================${HOSTNAME}"
         sshpass -f passw.txt scp /etc/hosts/ root@${HOSTNAME}:/etc/hosts
         sshpass -f passw.txt scp /etc/ssh/ssh_known_hosts root@${HOSTNAME}:/etc/ssh/ssh_known_hosts
 done
 ```
 **3. Set PasswordLess SSH authentication**
 
-use default location pressing ENTER, leave empty password pressing ENTER two times
+In order to install Hortonworks HDP using Ambari, we need to set passwordless SSH access from master-node (namenode) where Ambari server will be installed to all slave-nodes. 
+To do so, we should generate RSA keys (private and public) using `ssh-keygen` utility using default settings for location pressing ENTER, leave empty password pressing ENTER two times.
+```
 ssh-keygen
-or just use following 
+```
+or just use following command to do things in silent mode
+```
 ssh-keygen -f id_rsa -t rsa -N ""
-
+```
+Following bash code will copy public key generated for master-node to all remote nodes adding the key to the authorized_keys file on each node.
+```
 #!/bin/bash
 cat /root/hostNames | while read HOSTNAME
 do
-echo "==========================${HOSTNAME} -- PasswordLess"
+echo "==========================${HOSTNAME}"
         sshpass -f passw.txt ssh-copy-id root@${HOSTNAME}
         hostname
 done
+```
 
-4. Update OS kernels and packages in all remote nodes and reboot them
-
+**4. Update OS kernels and packages in all remote nodes and reboot them**
+```
 pssh --hosts hostNames -t 10000 --user root -i "yum -y update && yum -y upgrade"
 pssh --hosts hostNames --user root -i "reboot"
-
-5. On all remote nodes install packages those we will need later to download distributions and extract them
-
+```
+**5. On all remote nodes install packages those we will need later to download distributions and extract them**
+```
 pssh --hosts hostNames -t 1000 --user root -i "yum -y install zip; yum -y install unzip; yum -y install wget"
-
-6. to replace DNS Servers in all remote nodes 
-
+```
+**6. to replace DNS Servers in all remote nodes **
+```
 #!/bin/bash
 cat /root/hostNames | while read HOSTNAME
 do
@@ -124,37 +133,38 @@ sed -i '/DNS2=current-IP-address/c\DNS2=8.8.4.4' /etc/sysconfig/network-scripts/
 systemctl restart network
 EOF
 done
-
-6. Install Oracle JDK 8 to all remote nodes
-
+```
+**7. Install Oracle JDK 8 to all remote nodes**
+```
 pssh --hosts hostNames -t 10000 --user root -i "curl -LO -H 'Cookie: oraclelicense=accept-securebackup-cookie' http://download.oracle.com/otn-pub/java/jdk/8u151-b12/e758a0de34e24606bca991d704f6dcbf/jdk-8u151-linux-x64.rpm; rpm -Uvh jdk-8u151-linux-x64.rpm"
- 
-7. Change max number of open files
+ ```
+**8. Change max number of open files**
 use following commands to check appropriate value in your system
+```
 ulimit -Sn
 ulimit -Hn
-
-
+```
+```
 pssh --hosts hostNames -t 1000 --user root -i "echo -e '* soft nofile 10000\n* hard nofile 10000\nroot soft nofile 10000\nroot hard nofile 10000\n' >> /etc/security/limits.conf"
-
-8. Install Network Time Protocol (NTP) on all remote nodes and enable this service
-
+```
+**9. Install Network Time Protocol (NTP) on all remote nodes and enable this service**
+```
 pssh --hosts hostNames -t 1000 --user root -i "yum install -y ntp; systemctl start ntpd; systemctl enable ntpd"
 pssh --hosts hostNames -t 1000 --user root -i "systemctl start ntpd; systemctl enable ntpd"
- 
-9. Install Name Service Caching Daemon (nscd) on all remote nodes and enable this service
-
+``` 
+**10. Install Name Service Caching Daemon (nscd) on all remote nodes and enable this service
+```
 pssh --hosts hostNames -t 1000 --user root -i "yum -y install nscd; systemctl start nscd.service; systemctl enable nscd.service" 
-
-10. Configuring iptables - Disable Firewalls
-
+```
+**11. Configuring iptables - Disable Firewalls**
+```
 pssh --hosts hostNames -t 1000 --user root -i "systemctl disable firewalld; service firewalld stop"
-
-11. Disable Security-Enhanced Linux (SELinux) 
-
+```
+**12. Disable Security-Enhanced Linux (SELinux) **
+```
 pssh --hosts hostNames -t 1000 --user root -i "sed -i '/SELINUX=enforcing/c\SELINUX=disabled' /etc/selinux/config; echo umask 0022 >> /etc/profile"
-
-12. Create local Repository
+```
+**13. Create local Repository**
 
 Create local Repository for Ambary, HDP and HDP-UTILS. This is important to do speed-up the installation process. As a result instead of downloding large distributives from Internet, they will be taken from local network.
 We will use wget -b ...     // download in background and save logs in wget-log file
