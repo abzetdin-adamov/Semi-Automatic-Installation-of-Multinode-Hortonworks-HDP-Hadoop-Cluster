@@ -4,7 +4,7 @@ In this tutorial you will be guided щт how to install Multinode Hortonworks HD
 We assume that there are 5 computers (or virtual machines): 1 of them will serve as master node (NameNode), 4 others as slaves (DataNode). We also assume that root password is same in all 5 nodes. 
 The difference of this tutorial is this: same guidelines can be used to install Hadoop cluster on any number of nodes (from several to hundreds) without significant affecting time and efforts. 
 
-Installation will be accomplished on master node (in my case namenode.hadoop.ada).
+Installation will be accomplished on master node (in my case `namenode.hadoop.ada).
 ```
 yum -y update && yum -y upgrade
 ```
@@ -26,26 +26,29 @@ root password is written into file located in root's home directory to avoid ent
 echo "pawword" >> ./passw.txt
 chmod 600 passw.txt
 ```
-We add the list of all nodes and their FQDNs to /etc/hosts
+We add the list of all nodes and their FQDNs to `/etc/hosts`
+```
 192.168.33.50 namenode.hadoop.ada
 192.168.33.51 datanode01.hadoop.ada
 192.168.33.52 datanode02.hadoop.ada
 192.168.33.53 datanode03.hadoop.ada
 192.168.33.54 datanode04.hadoop.ada
-
-Additionally write all hostnames into file /root/hostNames that in shell scripts
+```
+Additionally write all hostnames into file `/root/hostNames that` in shell scripts
+```
 namenode.hadoop.ada
 datanode01.hadoop.ada
 datanode02.hadoop.ada
 datanode03.hadoop.ada
 datanode04.hadoop.ada
+```
 
-
-1. To change hostnames of all remote nodes, the shell script will be used
+**1. To change hostnames of all remote nodes, the shell script will be used**
 Create new file with extension .sh and type following bash code
-
+```
 vi ~/shellscript.sh
-
+```
+```
 #!/bin/bash
 cat /root/hostNames | while read HOSTNAME
 do
@@ -55,26 +58,28 @@ hostnamectl set-hostname ${HOSTNAME}
 hostname
 EOF
 done
-
+```
 to make file runnable/executable
+```
 chmod +x shellscript.sh
+```
 
-
-2. Copy all /etc/hosts to all remote nodes. Copy all /etc/ssh/ssh_known_hosts to all remote nodes
+**2. Copy all /etc/hosts to all remote nodes. Copy all /etc/ssh/ssh_known_hosts to all remote nodes**
 
 To avoid being asked to approve fingerprint each time when connect to remote node the first time:
-
+```
 ssh-keyscan -H namenode.hadoop.ada >> ~/.ssh/known_hosts
 ssh-keyscan -H datanode01.hadoop.ada >> ~/.ssh/known_hosts
 ssh-keyscan -H datanode02.hadoop.ada >> ~/.ssh/known_hosts
 ssh-keyscan -H datanode03.hadoop.ada >> ~/.ssh/known_hosts
 ssh-keyscan -H datanode04.hadoop.ada >> ~/.ssh/known_hosts
-
+```
 To make known_hosts work for all users
+```
 cp ~/.ssh/known_hosts /etc/ssh/ssh_known_hosts
-
+```
 Now rund following bash script
-
+```
 #!/bin/bash
 cat /root/hostNames | while read HOSTNAME
 do
@@ -82,8 +87,8 @@ echo "==========================${HOSTNAME} --"
         sshpass -f passw.txt scp /etc/hosts/ root@${HOSTNAME}:/etc/hosts
         sshpass -f passw.txt scp /etc/ssh/ssh_known_hosts root@${HOSTNAME}:/etc/ssh/ssh_known_hosts
 done
-
-3. Set PasswordLess SSH authentication
+```
+**3. Set PasswordLess SSH authentication**
 
 use default location pressing ENTER, leave empty password pressing ENTER two times
 ssh-keygen
