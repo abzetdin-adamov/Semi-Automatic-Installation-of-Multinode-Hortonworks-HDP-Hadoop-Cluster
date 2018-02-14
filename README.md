@@ -46,6 +46,7 @@ datanode04.hadoop.ada
 ```
 
 **1. To change hostnames of all remote nodes, the shell script will be used**
+
 Create new file with extension .sh and type following bash code
 ```
 vi ~/shellscript.sh
